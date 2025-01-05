@@ -1,5 +1,13 @@
 # Public Infra
 
+This is a repo containing all the code needed to deploy public service infrastructure.
+
+Currently, the supported services are:
+
+* Tor Bridges
+
+This repo should be usable for anyone to deploy this public infrastructure with minimal effort.
+
 ## Deploying
 These services are deployed manually using terraform and the wonderfully declarative [Flatcar Container Linux](https://www.flatcar.org/).
 
@@ -9,6 +17,8 @@ The [1Password cli](https://developer.1password.com/docs/cli/get-started/) needs
 ### Tor Bridges
 
 Tor Bridges are managed with terraform under `bridges/`.
+
+Currently, we use a single hosting provider, Vultr, to host the bridges.
 
 The bridges are deployed with Flatcar Container Linux, which is a
 container-optimized Linux distribution meant to be declaratively provisioned.
