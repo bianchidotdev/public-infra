@@ -1,0 +1,56 @@
+---
+variant: flatcar
+version: 1.1.0
+
+systemd:
+  units:
+    - name: systemd-sysupdate.timer
+      enabled: true
+    - name: systemd-sysupdate.service
+      dropins:
+        - name: tailscale.conf
+          contents: |
+            [Service]
+            ExecStartPre=/usr/lib/systemd/systemd-sysupdate -C tailscale update
+        - name: sysext.conf
+          contents: |
+            [Service]
+            ExecStartPost=systemctl restart systemd-sysext
+
+    - name: tailscale.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Tailscale Service
+        After=tailscaled.service
+
+        [Service]
+        ExecStart=/usr/local/bin/tailscale up --auth-key ${tailscale_auth_key} --ssh
+        Restart=on-failure
+
+        [Install]
+        WantedBy=multi-user.target
+storage:
+  files:
+    - path: /opt/extensions/tailscale/tailscale-1.76.6-x86-64.raw
+      contents:
+        source: https://github.com/flatcar/sysext-bakery/releases/download/latest/tailscale-1.76.6-x86-64.raw
+    - path: /etc/sysupdate.d/noop.conf
+      contents:
+        source: https://github.com/flatcar/sysext-bakery/releases/download/latest/noop.conf
+    - path: /etc/sysupdate.tailscale.d/tailscale.conf
+      contents:
+        source: https://github.com/flatcar/sysext-bakery/releases/download/latest/tailscale.conf
+    # to get past the requirement for an EnvironmentFile in the systemd unit
+    - path: /etc/default/tailscaled
+      contents:
+          inline: ""
+  links:
+    # provides a consistent path for the tailscale sysext
+    - target: /opt/extensions/tailscale/tailscale-1.76.6-x86-64.raw
+      path: /etc/extensions/tailscale.raw
+      hard: false
+    # enables the tailscale sysext service unit
+    - path: /etc/systemd/system/multi-user.target.wants/tailscaled.service
+      target: /usr/local/lib/systemd/system/tailscaled.service
+      overwrite: true

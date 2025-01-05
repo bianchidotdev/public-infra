@@ -1,0 +1,25 @@
+[tools]
+lefthook = "latest"
+terraform = "1"
+
+[tasks."bridges:deploy"]
+dir = "./bridges"
+description = "deploys the tor bridges"
+run = "op run --env-file=.env -- terraform apply"
+
+[tasks."logs:start_services"]
+dir = "./logs"
+description = "starts up grafana and loki for log querying"
+run = "docker-compose up -d"
+
+[tasks."logs:down"]
+dir = "./logs"
+description = "stops the log services"
+run = "docker-compose down"
+
+[tasks."logs:ship"]
+description = "ships logs to loki"
+dir = "./logs"
+run = """
+op run --env-file=.env -- duckdb -init duckdbinit.sql -c "select * from read_json('s3://homelab-logs/*.log.gz', format = 'array', compression = 'gzip');" | vector -c vector.yaml
+"""

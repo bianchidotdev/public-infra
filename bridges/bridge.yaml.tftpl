@@ -1,0 +1,39 @@
+---
+variant: flatcar
+version: 1.1.0
+
+systemd:
+  units:
+    - name: obfs4.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=obfs4 bridge
+        [Service]
+        Type=fork
+        EnvironmentFile=/opt/tor-bridge
+        ExecStartPre=-/usr/bin/docker stop tor-bridge
+        ExecStartPre=-/usr/bin/docker rm tor-bridge
+        ExecStartPre=/usr/bin/docker pull thetorproject/obfs4-bridge:latest
+        ExecStart=/usr/bin/docker run \
+          --name tor-bridge \
+          -v "tor-datadir-${or_port}-${pt_port}:/var/lib/tor" \
+          --env-file /opt/tor-bridge \
+          --publish "${or_port}:${or_port}" \
+          --publish "${pt_port}:${pt_port}" \
+          thetorproject/obfs4-bridge:latest
+        [Install]
+        WantedBy=multi-user.target
+storage:
+  files:
+    - path: /opt/tor-bridge
+      mode: 0644
+      contents:
+        inline: |
+          OR_PORT=${or_port} IPv4Only
+          PT_PORT=${pt_port}
+          EMAIL=${email}
+          NICKNAME=${bridge_name}
+          OBFS4_ENABLE_ADDITIONAL_VARIABLES=1
+          OBFS4V_AccountingStart="week 3 10:00"
+          OBFS4V_AccountingMax="500 GBytes"
