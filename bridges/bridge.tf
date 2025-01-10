@@ -62,6 +62,13 @@ data "ct_config" "bridges" {
     }),
     var.tailscale_auth_key == "" ? [] : [templatefile("./tailscale.yaml.tftpl", {
       tailscale_auth_key = var.tailscale_auth_key
-    })]
+    })],
+    (var.logs_access_key_id == "" && var.logs_secret_access_key == "") ? [] : [
+      templatefile("./logs.yaml.tftpl", {
+        aws_access_key_id     = var.logs_access_key_id
+        aws_secret_access_key = var.logs_secret_access_key
+        host                  = "${var.bridge_name_prefix}${each.key}"
+      })
+    ]
   ])
 }

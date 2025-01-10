@@ -17,6 +17,23 @@ systemd:
             [Service]
             ExecStartPost=systemctl restart systemd-sysext
 
+    - name: tailscaled.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Tailscaled Service
+
+        [Service]
+        EnvironmentFile=
+        EnvironmentFile=-/etc/default/tailscaled
+        ExecStart=
+        ExecStart=/usr/local/sbin/tailscaled --state=/var/lib/tailscale/tailscaled.state --socket=/run/tailscale/tailscaled.sock
+        ExecStopPost=
+        ExecStopPost=/usr/local/sbin/tailscaled --cleanup
+
+        [Install]
+        WantedBy=multi-user.target
+
     - name: tailscale.service
       enabled: true
       contents: |
@@ -47,10 +64,11 @@ storage:
           inline: ""
   links:
     # provides a consistent path for the tailscale sysext
+    # Doesn't seem to work: see https://github.com/flatcar/sysext-bakery/issues/105
     - target: /opt/extensions/tailscale/tailscale-1.76.6-x86-64.raw
       path: /etc/extensions/tailscale.raw
       hard: false
     # enables the tailscale sysext service unit
-    - path: /etc/systemd/system/multi-user.target.wants/tailscaled.service
-      target: /usr/local/lib/systemd/system/tailscaled.service
-      overwrite: true
+    # - path: /etc/systemd/system/multi-user.target.wants/tailscaled.service
+    #   target: /usr/local/lib/systemd/system/tailscaled.service
+    #   overwrite: true

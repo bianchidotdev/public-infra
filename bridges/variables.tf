@@ -47,3 +47,15 @@ variable "tailscale_auth_key" {
   sensitive = true
   type      = string
 }
+
+variable "logs_access_key_id" {
+  default   = ""
+  sensitive = true
+  type      = string
+}
+
+variable "logs_secret_access_key" {
+  default   = ""
+  sensitive = true
+  type      = string
+}

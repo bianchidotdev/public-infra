@@ -9,19 +9,25 @@ systemd:
       contents: |
         [Unit]
         Description=obfs4 bridge
+        After=docker.service
+        Requires=docker.service
+
         [Service]
-        Type=fork
+        TimeoutStartSec=0
         EnvironmentFile=/opt/tor-bridge
-        ExecStartPre=-/usr/bin/docker stop tor-bridge
-        ExecStartPre=-/usr/bin/docker rm tor-bridge
-        ExecStartPre=/usr/bin/docker pull thetorproject/obfs4-bridge:latest
+        ExecStartPre=-/usr/bin/docker rm --force tor-bridge
         ExecStart=/usr/bin/docker run \
           --name tor-bridge \
+          --pull always \
           -v "tor-datadir-${or_port}-${pt_port}:/var/lib/tor" \
           --env-file /opt/tor-bridge \
           --publish "${or_port}:${or_port}" \
           --publish "${pt_port}:${pt_port}" \
           thetorproject/obfs4-bridge:latest
+        ExecStop=/usr/bin/docker stop tor-bridge
+        Restart=always
+        RestartSec=5s
+
         [Install]
         WantedBy=multi-user.target
 storage:
