@@ -6,7 +6,7 @@
 
 data "vultr_os" "flatcar-stable" {
   filter {
-    name = "name"
+    name   = "name"
     values = ["Flatcar Container Linux Stable x64"]
   }
 }

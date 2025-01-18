@@ -13,7 +13,7 @@ terraform {
 
   backend "s3" {
     bucket                      = "homelab-tf-state"
-    key                         = "vultr/terraform.tfstate"
+    key                         = "bridges/terraform.tfstate"
     region                      = "global"
     skip_credentials_validation = true
     skip_metadata_api_check     = true
