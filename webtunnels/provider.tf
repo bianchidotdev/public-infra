@@ -9,6 +9,11 @@ terraform {
       source  = "poseidon/ct"
       version = "~> 0.13.0"
     }
+
+    porkbun = {
+      source  = "cullenmcdermott/porkbun"
+      version = "~> 0.3.0"
+    }
   }
 
   backend "s3" {
@@ -30,3 +35,5 @@ provider "vultr" {
 }
 
 provider "ct" {}
+
+provider "porkbun" {}

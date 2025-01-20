@@ -1,0 +1,120 @@
+variant: fcos
+version: 1.5.0
+
+systemd:
+  units:
+    # installing caddy
+    - name: rpm-ostree-install-caddy.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Layer caddy with rpm-ostree
+        Wants=network-online.target
+        After=network-online.target
+        # We run before `zincati.service` to avoid conflicting rpm-ostree
+        # transactions.
+        Before=zincati.service
+        ConditionPathExists=!/var/lib/%N.stamp
+
+        [Service]
+        Type=oneshot
+        RemainAfterExit=yes
+        ExecStart=/usr/bin/rpm-ostree install --idempotent --apply-live caddy
+        ExecStart=/usr/bin/systemctl enable --now caddy
+        ExecStart=/bin/touch /var/lib/%N.stamp
+
+        [Install]
+        WantedBy=multi-user.target
+
+    - name: caddy.service
+      enabled: true
+
+    - name: webtunnel.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=webtunnel bridge
+        After=caddy.service
+
+        [Service]
+        TimeoutStartSec=0
+        EnvironmentFile=/opt/webtunnel-bridge
+        ExecStartPre=-/usr/bin/docker rm --force webtunnel-bridge
+        ExecStart=/usr/bin/docker run \
+          --name webtunnel-bridge \
+          --pull always \
+          -v "tor-datadir:/var/lib/tor" \
+          --env-file /opt/webtunnel.env \
+          --publish '127.0.0.1:15000:15000' \
+          thetorproject/webtunnel-bridge:latest
+        ExecStop=/usr/bin/docker stop webtunnel-bridge
+        Restart=always
+        RestartSec=5s
+
+        [Install]
+        WantedBy=multi-user.target
+
+storage:
+  files:
+    - path: /opt/webtunnel.env
+      mode: 0644
+      contents:
+        inline: |
+          NICKNAME=$BRIDGE_NICKNAME
+          OR_PORT=127.0.0.1:auto
+          PT_PORT=15000
+          EMAIL=${email}
+          WEBTUNNEL_URL=https://${webtunnel_domain}/${webtunnel_path}
+          WEBTUNNELV_ExtORPort=auto
+          WEBTUNNELV_Assume_Reachable=1
+
+    - path: /etc/caddy/Caddyfile
+      mode: 0644
+      contents:
+        inline: |
+          {
+            # HTTP server port - as we don't use port 80 we force
+            # 'TLS-ALPN challenge', see
+            # https://caddyserver.com/docs/automatic-https#http-challenge
+            # https://caddyserver.com/docs/automatic-https#tls-alpn-challenge
+            # Do not open port 80 and 85 in the firewall
+            http_port 85
+
+            email ${email}
+          }
+
+          (DefaultSecHeader) {
+            header {
+              Strict-Transport-Security "max-age=31536000; includeSubDomains"
+              Referrer-Policy "same-origin"
+              X-Content-Type-Options "nosniff"
+              X-Frame-Options "SAMEORIGIN"
+              X-XSS-Protection "1; mode=block"
+              # Disable FLoC tracking
+              Permissions-Policy "interest-cohort=()"
+              # Hide "Server" header / server information
+              -Server
+              -X-Powered-By
+            }
+          }
+
+          www.${webtunnel_domain} ${webtunnel_domain} {
+            handle_errors {
+              import DefaultSecHeader
+            }
+
+            import DefaultSecHeader
+
+            # Ensure that the server does not run out of memory
+            request_body {
+              max_size 10MB
+            }
+
+            handle_path /${webtunnel_path} {
+              reverse_proxy 127.0.0.1:15000
+            }
+
+            handle {
+              respond "Hello!"
+            }
+          }
