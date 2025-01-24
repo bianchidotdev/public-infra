@@ -24,6 +24,11 @@ resource "vultr_instance" "webtunnel" {
   ]
 }
 
+output "webtunnels" {
+  sensitive = true
+  value     = vultr_instance.webtunnel
+}
+
 resource "vultr_firewall_group" "webtunnel" {
   description = "Allow inbound traffic for webtunnels"
 }
@@ -46,6 +51,24 @@ resource "vultr_firewall_rule" "webtunnel_https" {
   port              = 443
 }
 
+resource "vultr_firewall_rule" "webtunnel_ipv6_http" {
+  firewall_group_id = vultr_firewall_group.webtunnel.id
+  protocol          = "tcp"
+  ip_type           = "v6"
+  subnet            = "::"
+  subnet_size       = 0
+  port              = 80
+}
+
+resource "vultr_firewall_rule" "webtunnel_ipv6_https" {
+  firewall_group_id = vultr_firewall_group.webtunnel.id
+  protocol          = "tcp"
+  ip_type           = "v6"
+  subnet            = "::"
+  subnet_size       = 0
+  port              = 443
+}
+
 resource "porkbun_dns_record" "webtunnel" {
   for_each = local.webtunnels
 
@@ -57,8 +80,11 @@ resource "porkbun_dns_record" "webtunnel" {
 
 # butane -> ignition resource
 data "ct_config" "webtunnel" {
-  for_each     = local.webtunnels
-  content      = file("../coreos/system.yaml")
+  for_each = local.webtunnels
+  content = templatefile("../coreos/system.yaml.tftpl", {
+    tailscale_rpm = var.tailscale_auth_key == "" ? "" : "tailscale"
+    caddy_rpm     = "caddy"
+  })
   strict       = true
   pretty_print = false
 
@@ -66,7 +92,7 @@ data "ct_config" "webtunnel" {
     templatefile("../coreos/webtunnel.yaml.tftpl", {
       bridge_name      = "${var.bridge_name_prefix}${each.key}"
       email            = var.bridge_email
-      webtunnel_domain = "${each.value.subdomain}${var.webtunnel_domain}"
+      webtunnel_domain = "${each.value.subdomain}.${var.webtunnel_domain}"
       webtunnel_path   = each.value.random_path
     }),
     var.tailscale_auth_key == "" ? [] : [templatefile("../coreos/tailscale.yaml.tftpl", {

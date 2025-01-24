@@ -7,25 +7,25 @@ locals {
   #   "jnb",
   # ]
   webtunnel_data = {
-    1 = {
-      region    = "fra"
-      subdomain = ""
+    # 1 = {
+    #   region    = "fra"
+    #   subdomain = "www"
+    # }
+    2 = {
+      region    = "waw"
+      subdomain = "waw"
     }
-    # 2 = {
-    #   region    = "waw"
-    #   subdomain = "waw."
-    # }
-    # 3 = {
-    #   region    = "sto"
-    #   subdomain = "sto."
-    # }
+    3 = {
+      region    = "sto"
+      subdomain = "sto"
+    }
     # 4 = {
     #   region    = "nrt"
-    #   subdomain = "nrt."
+    #   subdomain = "nrt"
     # }
     # 5 = {
     #   region    = "jnb"
-    #   subdomain = "jnb."
+    #   subdomain = "jnb"
     # }
   }
   # there's some hacky stuff to get around the fact that you can't iterate over sensitive data
@@ -41,7 +41,7 @@ locals {
   }
 }
 
-output "webtunnels" {
+output "webtunnel_data" {
   value = local.webtunnels
 }
 

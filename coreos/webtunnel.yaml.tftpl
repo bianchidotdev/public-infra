@@ -3,46 +3,22 @@ version: 1.5.0
 
 systemd:
   units:
-    # installing caddy
-    - name: rpm-ostree-install-caddy.service
-      enabled: true
-      contents: |
-        [Unit]
-        Description=Layer caddy with rpm-ostree
-        Wants=network-online.target
-        After=network-online.target
-        # We run before `zincati.service` to avoid conflicting rpm-ostree
-        # transactions.
-        Before=zincati.service
-        ConditionPathExists=!/var/lib/%N.stamp
-
-        [Service]
-        Type=oneshot
-        RemainAfterExit=yes
-        ExecStart=/usr/bin/rpm-ostree install --idempotent --apply-live caddy
-        ExecStart=/usr/bin/systemctl enable --now caddy
-        ExecStart=/bin/touch /var/lib/%N.stamp
-
-        [Install]
-        WantedBy=multi-user.target
-
-    - name: caddy.service
-      enabled: true
-
     - name: webtunnel.service
       enabled: true
       contents: |
         [Unit]
         Description=webtunnel bridge
-        After=caddy.service
+        After=rpm-ostree-install.service
+        Requires=rpm-ostree-install.service
 
         [Service]
         TimeoutStartSec=0
-        EnvironmentFile=/opt/webtunnel-bridge
         ExecStartPre=-/usr/bin/docker rm --force webtunnel-bridge
+        ExecStartPre=/usr/bin/systemctl enable --now caddy.service
         ExecStart=/usr/bin/docker run \
           --name webtunnel-bridge \
           --pull always \
+          --user 101:101 \
           -v "tor-datadir:/var/lib/tor" \
           --env-file /opt/webtunnel.env \
           --publish '127.0.0.1:15000:15000' \
@@ -60,7 +36,7 @@ storage:
       mode: 0644
       contents:
         inline: |
-          NICKNAME=$BRIDGE_NICKNAME
+          NICKNAME=${bridge_name}
           OR_PORT=127.0.0.1:auto
           PT_PORT=15000
           EMAIL=${email}
@@ -98,7 +74,7 @@ storage:
             }
           }
 
-          www.${webtunnel_domain} ${webtunnel_domain} {
+          ${webtunnel_domain} {
             handle_errors {
               import DefaultSecHeader
             }

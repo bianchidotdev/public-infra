@@ -7,6 +7,11 @@ dir = "./bridges"
 description = "deploys the tor bridges"
 run = "op run --env-file=.env -- terraform apply"
 
+[tasks."webtunnels:deploy"]
+dir = "./webtunnels"
+description = "deploys the tor webtunnels"
+run = "op run --env-file=.env -- terraform apply"
+
 [tasks."logs:start_services"]
 dir = "./logs"
 description = "starts up grafana and loki for log querying"

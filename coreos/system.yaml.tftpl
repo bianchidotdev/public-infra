@@ -1,0 +1,52 @@
+variant: fcos
+version: 1.5.0
+
+passwd:
+  users:
+    - name: core
+      ssh_authorized_keys:
+        - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOxN58yRjg+8PNAcgCQzM26K9LLf8nH4J1PEqzXLGhQ5
+
+systemd:
+  units:
+    - name: docker.service
+      enabled: true
+
+    - name: rpm-ostree-install.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Layer additional rpms
+        Wants=network-online.target
+        After=network-online.target
+        # We run before `zincati.service` to avoid conflicting rpm-ostree transactions.
+        Before=zincati.service
+        ConditionPathExists=!/var/lib/%N.stamp
+
+        [Service]
+        Type=oneshot
+        RemainAfterExit=yes
+        ExecStart=/usr/bin/rpm-ostree install --reboot --idempotent --allow-inactive $RPMS
+        ExecStart=/bin/touch /var/lib/%N.stamp
+
+        [Install]
+        WantedBy=multi-user.target
+
+storage:
+  files:
+    - path: /etc/systemd/system/rpm-ostree-install.service.d/rpms.conf
+      mode: 0644
+      contents:
+        inline: |
+          [Service]
+          Environment=RPMS="htop ${tailscale_rpm} ${caddy_rpm}"
+
+    - path: /etc/zincati/config.d/55-updates-strategy.toml
+      contents:
+        inline: |
+          [updates]
+          strategy = "periodic"
+          [[updates.periodic.window]]
+          days = [ "Thu"]
+          start_time = "04:30"
+          length_minutes = 60

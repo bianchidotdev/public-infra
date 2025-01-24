@@ -3,28 +3,8 @@ version: 1.5.0
 
 systemd:
   units:
-    # installing tailscale
-    - name: rpm-ostree-install-tailscale.service
+    - name: tailscaled.service
       enabled: true
-      contents: |
-        [Unit]
-        Description=Layer tailscale with rpm-ostree
-        Wants=network-online.target
-        After=network-online.target
-        # We run before `zincati.service` to avoid conflicting rpm-ostree
-        # transactions.
-        Before=zincati.service
-        ConditionPathExists=!/var/lib/%N.stamp
-
-        [Service]
-        Type=oneshot
-        RemainAfterExit=yes
-        ExecStart=/usr/bin/rpm-ostree install --idempotent --apply-live tailscale
-        ExecStart=/usr/bin/systemctl enable --now tailscaled
-        ExecStart=/bin/touch /var/lib/%N.stamp
-
-        [Install]
-        WantedBy=multi-user.target
 
     - name: tailscale.service
       enabled: true
@@ -32,8 +12,11 @@ systemd:
         [Unit]
         Description=Tailscale Service
         After=tailscaled.service
+        After=rpm-ostree-install.service
+        Requires=rpm-ostree-install.service
 
         [Service]
+        ExecStartPre=/usr/bin/systemctl enable --now tailscaled.service
         ExecStart=/usr/bin/tailscale up --auth-key ${tailscale_auth_key} --ssh
         Restart=on-failure
 

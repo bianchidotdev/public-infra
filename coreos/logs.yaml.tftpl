@@ -34,3 +34,31 @@ storage:
       contents:
         inline: |
           AWS_ACCESS_KEY_ID=${aws_access_key_id}
+          AWS_SECRET_ACCESS_KEY=${aws_secret_access_key}
+
+    - path: /opt/vector/vector.yaml
+      mode: 0644
+      contents:
+        inline: |
+          api:
+            enabled: true
+            address: 0.0.0.0:8686
+
+          sources:
+            obfs4:
+              type: docker_logs
+              include_containers:
+                - tor-bridge
+                - webtunnel
+
+          sinks:
+            s3logs:
+              type: aws_s3
+              inputs:
+                - obfs4
+              bucket: homelab-logs
+              region: auto
+              endpoint: https://fly.storage.tigris.dev
+              key_prefix: "${host}/%F/"
+              encoding:
+                codec: json

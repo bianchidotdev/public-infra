@@ -4,7 +4,8 @@ This is a repo containing all the code needed to deploy public service infrastru
 
 Currently, the supported services are:
 
-* Tor Bridges
+* Tor OBFS4 Bridges
+* Tor Webtunnel Bridges
 
 This repo should be usable for anyone to deploy this public infrastructure with minimal effort.
 
@@ -14,17 +15,30 @@ These services are deployed manually using terraform and the wonderfully declara
 Required technologies and make-style tasks are provided by [mise](https://mise.jdx.dev/).
 The [1Password cli](https://developer.1password.com/docs/cli/get-started/) needs to be separately installed because I don't trust the source of the mise/asdf plugin.
 
+```sh
+# Install dependencies
+# install mise if not already installed
+brew install mise
+
+# install all required dependencies (lefthook, terraform)
+mise install
+```
+
 ### Tor Bridges
 
-Tor Bridges are managed with terraform under `bridges/`.
+Tor OBFS4 Bridges are managed with terraform under `bridges/`.
+
+Tor Webtunnel Bridges are managed with terraform under `webtunnels/`.
 
 Currently, we use a single hosting provider, Vultr, to host the bridges.
 
-The bridges are deployed with Flatcar Container Linux, which is a
-container-optimized Linux distribution meant to be declaratively provisioned.
+The bridges are deployed with Flatcar Container Linux or Fedora CoreOS, which
+are container-optimized Linux distributions meant to be declaratively
+provisioned.
 
-It uses an ignition config to provision the node, installing
+They both use an ignition config to provision the node, installing
 tailscale and the systemd service to run a tor obfs4 bridge via docker.
+This is managed with Terraform as well.
 
 We use a 1password service account to store the secrets needed for the
 deployment.
@@ -34,6 +48,10 @@ Deploy with the following command:
 ```sh
 mise run bridges:deploy
 ```
+
+If you want to deploy without 1password, you can populate the secrets directly
+in the `.env` files in `bridges/` and `webtunnels/`. You'll need to make sure
+not to commit them to a public git repository if you do this.
 
 #### Logs
 
