@@ -35,6 +35,11 @@ storage:
     - path: /opt/webtunnel.env
       mode: 0644
       contents:
+        # mixed setup instructions from:
+        # - https://community.torproject.org/relay/setup/webtunnel/source/
+        # - https://community.torproject.org/relay/setup/webtunnel/docker/
+        # - entrypoint script from docker image
+        # context about ORPort: https://gitlab.torproject.org/tpo/web/community/-/issues/329
         inline: |
           NICKNAME=${bridge_name}
           OR_PORT=127.0.0.1:auto
