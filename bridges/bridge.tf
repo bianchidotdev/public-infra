@@ -48,22 +48,22 @@ resource "vultr_firewall_rule" "allow_pt_port" {
 # butane -> ignition resource
 data "ct_config" "bridges" {
   for_each     = var.bridges
-  content      = file("./flatcar/system.yaml")
+  content      = file("../flatcar/system.yaml")
   strict       = true
   pretty_print = false
 
   snippets = flatten([
-    templatefile("./flatcar/bridge.yaml.tftpl", {
+    templatefile("../flatcar/bridge.yaml.tftpl", {
       bridge_name = "${var.bridge_name_prefix}${each.key}"
       email       = var.bridge_email
       or_port     = var.bridge_or_port
       pt_port     = var.bridge_pt_port
     }),
-    var.tailscale_auth_key == "" ? [] : [templatefile("./flatcar/tailscale.yaml.tftpl", {
+    var.tailscale_auth_key == "" ? [] : [templatefile("../flatcar/tailscale.yaml.tftpl", {
       tailscale_auth_key = var.tailscale_auth_key
     })],
     (var.logs_access_key_id == "" && var.logs_secret_access_key == "") ? [] : [
-      templatefile("./flatcar/logs.yaml.tftpl", {
+      templatefile("../flatcar/logs.yaml.tftpl", {
         aws_access_key_id     = var.logs_access_key_id
         aws_secret_access_key = var.logs_secret_access_key
         host                  = "${var.bridge_name_prefix}${each.key}"
